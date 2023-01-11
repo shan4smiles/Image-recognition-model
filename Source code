@@ -1,0 +1,83 @@
+import matplotlib.pyplot as plt
+import tensorflow as tf
+
+from tensorflow.keras import datasets, models, layers
+
+# a]load data + b]#pre-processing it
+#getting the data from keras API
+(train_images, train_labels),(test_images, test_labels) = datasets.cifar10.load_data()
+
+# c]normalizing the data
+#image pixel size is generally in range between 0 to 255, so changing it to 0's and 1's
+train_images, test_images = train_images/255, test_images/255
+print(train_labels, '\n', test_labels)
+
+#Verification of data drawn from API is correct or not-first 25- for our understanding as a student
+plt.figure(figsize=(10,10))
+j=0
+for i in range(21,46):
+  plt.xticks([])
+  plt.yticks([])
+  plt.grid(False)
+  plt.subplot(5,5,j+1)
+  j=j+1
+  #to show images
+  plt.imshow(train_images[i], cmap=plt.cm.binary)
+  #to show labels
+  plt.xlabel(train_labels[i])
+plt.show()
+print(train_images[0].shape)
+# To me: Run the above code and then see the labels of x
+class_names = ['airplane', 'cars', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+plt.figure(figsize=(10,10))
+for i in range(30):
+  plt.xticks([])
+  plt.yticks([])
+  plt.grid(True)
+  plt.subplot(5,6,i+1)
+  #to show images
+  plt.imshow(train_images[i])
+  #to show labels
+  plt.xlabel(class_names[train_labels[i][0]])
+
+#developing a cnn network
+model = models.Sequential()
+# 1. Making a conv2d layer to get the features (RGB)
+# 2. Activating the output layer by relU brings out only the common feature (R or G or B)
+# 3. MaxPooling takes the maximum value of (R or G or B) with (2,2) kernel
+
+#input_shape(img_height, img_width, img_colors/channels)
+# (3,3) = size of kernel
+# 32 = filters of (3,3) kernels
+# relU activation func : bringing out specific features from the feature map
+model.add(layers.Conv2D(32, (3,3), activation='relu', input_shape=(32,32,3)))
+# max pooling is used to reduce the spatial dimensions of the "output spatial res of conv2d layers"
+# Max pooling is a pooling operation that selects the maximum element from the region of the feature map covered by the filter
+model.add(layers.MaxPooling2D(2,2))
+model.add(layers.Conv2D(64,(3,3), activation = 'relu'))
+model.add(layers.MaxPooling2D((2,2)))
+model.add(layers.Conv2D(64,(3,3), activation = 'relu'))
+model.summary()
+
+#developing a dense cnn network
+model.add(layers.Flatten())
+model.add(layers.Dense(64, activation='relu'))
+model.add(layers.Dense(10))
+model.summary()
+
+#Putting all the necessary parameters into the model
+model.compile(optimizer = 'adam', loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics= ['accuracy'])
+
+#loading data into model
+history = model.fit(train_images, train_labels, epochs=5, validation_data = (test_images, test_labels))
+
+#plotting the accuracy graph of epocha vs accuracy --> how accuracy increases with more number of cycles
+plt.plot(history.history['val_accuracy'], label='Value Accuracy', color = 'blue')
+plt.plot(history.history['accuracy'], label = 'Accuracy', color = 'green')
+plt.plot(history.history['loss'], label = 'Loss', color = 'red')
+plt.legend(loc='upper left')
+plt.xlabel('Epocha')
+plt.ylabel('Accuracy')
+plt.xlim([0,4])
+plt.ylim([0.5,1.5])
+plt.show()
